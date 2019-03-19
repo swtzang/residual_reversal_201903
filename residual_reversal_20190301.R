@@ -638,14 +638,14 @@ gp= ggplot(data.pg, aes(x=Index, y=Value, group = Series)) +
   theme(legend.text = element_text(colour="blue", size = 9, face = "bold")) +
   geom_hline(yintercept=c(1,10),colour="#990000", linetype="dashed")
 gp
-path_gp = paste("~/residual reversal/output/", "10Q_equity", sep="")
+path_gp = paste("./output/", "10Q_equity", sep="")
 ExportPlot(gp, path_gp) # run ExportPlot() function first!
 # export statistics table
 #models.m = rev(models.tw[[m]]) #reverse the order to be Q10, Q9, ..., Q1.
 #  plotbt(models, plotX = T, log = 'y', LeftMargin = 3)            
 #  mtext('Cumulative Performance', side = 2, line = 1)
 pbt = plotbt.strategy.sidebyside(models.tw, return.table = TRUE)
-path_risk = paste("~/residual reversal/output/", "risk_equity.csv", sep="")
+path_risk = paste("./output/", "risk_equity.csv", sep="")
 write.csv(pbt, path_risk)
 #============================
 # output graph in pdf
@@ -783,7 +783,7 @@ my.xtable<-xtable(x = ret.stats.df,
                   digits = 4)
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table1_return_stats.tex',
+      file = './output/tables/table1_return_stats.tex',
       type = 'latex')
 
 #-----------------------------------------------------------------------------------------
@@ -886,7 +886,7 @@ my.xtable<-xtable(x = ret.stats.cap.df,
                   digits = 4)
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table2_ret_stats_cap.tex',
+      file = './output/tables/table2_ret_stats_cap.tex',
       type = 'latex')
 
 ###################################################################
@@ -1224,7 +1224,7 @@ my.xtable<-xtable(x = res.stats.df,
                   digits = 4)
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table1_res_stats_equalw.tex',
+      file = './output/tables/table1_res_stats_equalw.tex',
       #file = '~/residual reversal/output/tables/table1_res_stats_capw.tex',
       type = 'latex')
 
@@ -1318,7 +1318,7 @@ my.xtable<-xtable(x = res.cap.stats.df,
                   digits = 4)
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table2_res_stats_capw.tex',
+      file = './output/tables/table2_res_stats_capw.tex',
       type = 'latex')
 
 #--------------------------------------------------------------------------
@@ -1350,17 +1350,25 @@ gg20<- ggplot(ret_res_equal.long, aes(x=Index, y=Value, group = Series)) +
             xlab("year") + ylab("value")
 #
 gg20
-path_gg20 = paste("~/residual reversal/output/", "ret_res_equal", sep="")
+path_gg20 = paste("./output/", "ret_res_equal", sep="")
 ExportPlot(gg20, path_gg20)
 #----------------------------------------
 
-#------------------------------------------------------------------------------
+#---------------------------------------------
 # Plot multiple months by year for conventional return reversal vs. residual reversal
 # monthly returns
+# g21
 #-----------------------------------------------------------------------------
 ret_res_equal.ret<-merge(models.tw[[1]][3]$ret, quantiles.tw$last.e_s$models[[1]][3]$ret)
 ret_res_equal.ret<-ret_res_equal.ret['1993/2017']
 colnames(ret_res_equal.ret)<-c('ret_Q1', 'res_Q1')
+head(ret_res_equal.ret)
+# Compute cumulative returns by year
+library(PMwR)
+ret_res_equal.price <- 100 * cumprod(1+ret_res_equal.ret)
+ret_res_equal.ret.year<-returns(ret_res_equal.price, period = "year")
+ret_res_equal.ret.year
+#
 ret_res_equal.ret.long<-fortify(ret_res_equal.ret, melt=TRUE)
 head(ret_res_equal.ret.long)
 ret_res_equal.ret.long$Year = year(ret_res_equal.long$Index)
@@ -1374,25 +1382,28 @@ gg21<-ggplot(ret_res_equal.ret.long, aes(x=Month, y=Value, group = Series)) +
   #          hjust = 0.1, size=3, color= 'black', parse = TRUE)+
   #geom_hline(yintercept=c(1, 0.5, 0),colour="#990000", linetype="dashed")+
   #ggtitle(title)
+gg21
 #----------------------------------------------------------------------------
 # calculate mean return for each year for conventional return reversal and residual 
 # reversal strategy
 #----------------------------------------------------------------------------
 tmp.xts = ret_res_equal.ret
-mean.out<-apply.yearly(tmp.xt, mean)
+mean.out<-apply.yearly(tmp.xts, mean)
 #sharperatio<-apply.yearly(tmp.xts, SharpeRatio, FUN="StdDev")
 sharperatio<-apply.yearly(tmp.xts, SharpeRatio)
 # There will be three outputs for SharpeRatio fun: 
 # StdDev sharpe, VaR sharpe and ES sharpe ratio
 # We just choose the first one which is StdDev sharpe ratio
 sharperatio<-sharperatio[,c(1,4)]
+sharperatio
 retCum<-apply.yearly(tmp.xts, Return.cumulative)
-
+retCum
 #===============================================================================
-# save 3 factor model estimated coefficients across 10 portfoilos ranked by ret
+# save 3 factor model estimated coefficients across 10 portfoilos
 # in cf.ret.qi 
 #===============================================================================
 # We start from portfolio returns based on cap weighting
+#--------------------------------------------------------------------
 q1.ret = quantiles.tw$one.month$models_cap$one.month_Q1$ret
 q10.ret = quantiles.tw$one.month$models_cap$one.month_Q10$ret
 head(data.fa.tw$factors)
@@ -1423,29 +1434,88 @@ head(cf.ret.cap.qi[[10]], 40)
 tail(cf.ret.cap.qi[[10]], 1)
 par(mfrow=c(1,1))
 plot(na.trim(cf.ret.cap.qi[[1]][, 2:4]), ylim = c(-0.8, 1.5))
-#
+# use ggplot to replot the figure
 #colnames(cf.ret.cap.qi[[1]][,2:4])<-c("mkt", "SMB", "HML")
 tmp<-cf.ret.cap.qi[[1]][, 2:4]["1996/2017"]
-colnames(tmp)<-c("mkt", "SMB", "HML")
+colnames(tmp)<-c("MKP", "SMB", "HML")
 label.dat = fortify(tail(tmp,1), melt=TRUE)
 cf.ret.cap.q1.long<-fortify(tmp, melt = TRUE)
 head(cf.ret.cap.q1.long)
-title = paste("Coefficients of three factor models for conventional 
-              value-weighted return portfolios for Q1")
+title = "Dynamic factor exposures for conventional cap-weighted portfolio (Q1)"
 #
-gg1<-ggplot(cf.ret.cap.q1.long, aes(x=Index, y=Value, group = Series, color = Series)) +
-  geom_line(aes(linetype=Series)) +
-  geom_text(data = label.dat, aes(x = Index, y= Value, label = Series), 
+gg1_cf_cap<-ggplot(cf.ret.cap.q1.long, aes(x=Index, y=Value, group = Series, color = Series)) +
+    geom_line(aes(linetype=Series)) +
+    geom_text(data = label.dat, aes(x = Index, y= Value, label = Series), 
             hjust = 0.1, size=3, color= 'black', parse = TRUE)+
-  geom_hline(yintercept=c(1, 0.5, 0),colour="#990000", linetype="dashed")+
-  ggtitle(title)+
+    geom_hline(yintercept=c(1, 0.5, 0),colour="#990000", linetype="dashed")+
+    ggtitle(title)+
 #  geom_point(aes(shape=Series))+
-  xlab("year") + ylab("coefficients")
-path_gg1 = paste("~/residual reversal/output/", "cf_ret_cap_q1", sep="")
-ExportPlot(gg1, path_gg1)
+    xlab("year") + ylab("coefficient")
+gg1_cf_cap
+path_gg1_cf_cap = paste("./output/", "cf_ret_cap_q1", sep="")
+ExportPlot(gg1_cf_cap, path_gg1)
+
+#===============================================================================
+# save 3 factor model estimated coefficients across 10 portfoilos
+# in cf.ret.qi 
+#===============================================================================
+# We then work on portfolio returns based on equal weighting
+#--------------------------------------------------------------------
+q1.ret = quantiles.tw$one.month$models$one.month_Q1$ret
+q10.ret = quantiles.tw$one.month$models$one.month_Q10$ret
+head(data.fa.tw$factors)
+head(q1.ret)
+q1.ret.factors = merge(q1.ret, data.fa.tw$factors[,-4])
+q10.ret.factors = merge(q10.ret, data.fa.tw$factors[,-4])
+head(q1.ret.factors)
+q1.ret.factors = q1.ret.factors["199302/201712"]
+q10.ret.factors = q10.ret.factors["199302/201712"]
+head(q1.ret.factors)
+#write.csv(es.q1.ret.factors, file="D:/亞洲大學碩士班指導論文/雅萍香玫/香玫/es_q1_ret_factors.csv")
+#es.q1 = es.q1.ret.factors[,-3:-4]
+cf.ret.qi<-list()
+# i = 1
+for (i in 1:10){
+  temp.ret<-quantiles.tw$one.month$models[[i]]$ret 
+  temp.qi.ret.factors = merge(temp.ret, data.fa.tw$factors[,-4])
+  temp.qi.ret.factors = temp.qi.ret.factors["199302/201712"]
+  rolling <- function(x) coef(lm(X1101 ~ ., data = as.data.frame(x)))
+  #cf.es.q1 = rollapplyr(es.q1.ret.factors, 36, rolling, by.column = FALSE)
+  cf.ret.qi[[i]] <- rollapplyr(temp.qi.ret.factors, 36, rolling, by.column = FALSE)
+  #cf.es.q10 = rollapplyr(es.q10.ret.factors, 36, rolling, by.column = FALSE)
+  #head(cf.es.qi[[1]],40)
+  #tail(cf.ret.qi[[1]])
+}  
+
+head(cf.ret.qi[[10]], 40)
+tail(cf.ret.qi[[10]], 1)
+par(mfrow=c(1,1))
+plot(na.trim(cf.ret.qi[[1]][, 2:4]), ylim = c(-0.8, 1.5))
+# use ggplot to replot the figure
+#colnames(cf.ret.cap.qi[[1]][,2:4])<-c("mkt", "SMB", "HML")
+tmp<-cf.ret.qi[[1]][, 2:4]["1996/2017"]
+colnames(tmp)<-c("MKP", "SMB", "HML")
+label.dat = fortify(tail(tmp,1), melt=TRUE)
+cf.ret.q1.long<-fortify(tmp, melt = TRUE)
+head(cf.ret.q1.long)
+title = "Dynamic factor exposures for conventional equal-weighted portfolio (Q1)"
+#
+gg1_cf_equal<-ggplot(cf.ret.q1.long, aes(x=Index, y=Value, group = Series, color = Series)) +
+    geom_line(aes(linetype=Series)) +
+    geom_text(data = label.dat, aes(x = Index, y= Value, label = Series), 
+            hjust = 0.1, size=3, color= 'black', parse = TRUE)+
+    geom_hline(yintercept=c(1, 0.5, 0),colour="#990000", linetype="dashed")+
+    ggtitle(title)+
+    #  geom_point(aes(shape=Series))+
+    xlab("year") + ylab("coefficient")
+gg1_cf_equal
+path_gg1_cf_equal = paste("./output/", "cf_ret_equal_q1", sep="")
+ExportPlot(gg1_cf_equal, path_gg1_cf_equal)
+
 #-------------------------------------------------------------
-#計算Table 1 panel A run rolling regression by eq(15)
-# Conventional Return Reversal model based on Cap Weighting
+#計算Blitz's Table 1 panel A: run rolling regression by eq(15)
+# 1. Conventional Return Reversal model based on Cap Weighting
+# But here we run 10 portfolios instead of 2 portfolios in Blitz
 #-------------------------------------------------------------
 # create interaction variables with three factors:
 data.fa.tw$factors.lag<-lag(data.fa.tw$factors)
@@ -1554,7 +1624,7 @@ est.parm.eq.df
 # http://www.tablesgenerator.com/latex_tables
 # we can use latex table generator to generate tables
 #-----------------------------------------------------------------
-# 3 .Repeat the above codings again to compute Residual Reversal 
+# 3 Repeat the above codings again to compute Residual Reversal 
 # strategy based on equal weighting
 #------------------------------------------------------------------
 est.parm.es.eq<-matrix(data = NA, nrow=30, ncol =8)
@@ -1647,16 +1717,13 @@ est.parm.es.cap.df
 options("scipen"=10, "digits"= 5)
 #options("digits"= 3)
 est.parm.es.cap.df
-
-
-
 #===============================================================================
 # Blitz Table 4: here we don't need to differentiate captial from equal weighting as
 # we just focus on stocks coefficients not portfolio coefficients
 # save 3 factor model estimated coefficients across 10 portfoilos ranked by es
 # in cf.es.qi
 #===============================================================================
-# We start from portfolio returns based on cap weighting
+# We start from portfolio of residual returns based on cap weighting
 es.q1.ret = quantiles.tw$last.e_s$models_cap$last.e_s_Q1$ret
 es.q10.ret = quantiles.tw$last.e_s$models_cap$last.e_s_Q10$ret
 head(data.fa.tw$factors)
@@ -1687,34 +1754,99 @@ head(cf.es.qi[[10]], 40)
 #
 plot(na.trim(cf.es.qi[[1]][, 2:4]), ylim = c(-0.8, 1.5))
 # 
-cf.es.pg = fortify(na.trim(cf.es.qi[[1]][,2:4]), melt = TRUE)
-cf.ret.pg = fortify(na.trim(cf.ret.qi[[1]][,2:4]), melt = TRUE)
-dim(cf.es.pg)
-dim(cf.ret.pg)
+tmp<-cf.es.qi[[1]][,2:4]["1996/2017"]
+colnames(tmp)<-c("MKP", "SMB", "HML")
+cf.es.pg = fortify(na.trim(tmp), melt = TRUE)
 head(cf.es.pg)
+dim(cf.es.pg)
+#
+cf.ret.pg = fortify(na.trim(cf.ret.qi[[1]][,2:4]), melt = TRUE)
+dim(cf.ret.pg)
+head(cf.ret.pg)
 label.dat = fortify(tail(cf.es.qi[[1]][,2:4],1), melt=TRUE)
-title = "Dynamic factor exposures for residual reversal portfolio (Q1)"
+#
+title = "Dynamic factor exposures for cap-weighted residual portfolio (Q1)"
 #title = paste(title, 'based on quintiles of residual returns')
 #gp= ggplot(cf.es.pg, aes(x=Index, y=Value, group = Series)) +
-  ggplot(cf.es.pg, aes(x=Index, y=Value, group = Series)) +  
+gg11_cf_res_cap<-ggplot(cf.es.pg, aes(x=Index, y=Value, group = Series, color=Series)) +  
+    geom_line(aes(linetype=Series)) +
+    xlab("year") + ylab("coefficient")+
+    #scale_x_datetime(breaks = date_breaks("1 year"),labels = date_format("%Y"))+
+    geom_text(data = label.dat, aes(x = Index, y= Value, label = Series), 
+            hjust = 0.1, size=3, color= 'black', parse = TRUE)+
+    ggtitle(title) +
+    #theme(plot.title=element_text(face="bold", size=12))+
+    #theme(legend.position=c(0.8, 0.8))+
+    #theme(legend.position="right")
+    #theme(legend.justification=c(0,0), legend.position=c(0,0.6))+
+    #theme(legend.text = element_text(colour="blue", size = 10, face = "bold")) +
+    geom_hline(yintercept=c(1, 0.5, 0),colour="#990000", linetype="dashed")
+  
+gg11_cf_res_cap
+#
+path_gp = paste("./output/", "cf_res_cap_q1", sep="")
+ExportPlot(gg11_cf_res_cap, path_gp) # run Expo
+#==================================================================
+# We then work on portfolio residual returns based on equal weighting
+es.q1.ret = quantiles.tw$last.e_s$models$last.e_s_Q1$ret
+es.q10.ret = quantiles.tw$last.e_s$models$last.e_s_Q10$ret
+head(data.fa.tw$factors)
+head(es.q1.ret)
+#es.q1.ret.factors = merge(es.q1.ret, data.fa.tw$factors[,-4])
+#es.q10.ret.factors = merge(es.q10.ret, data.fa.tw$factors[,-4])
+#head(es.q1.ret.factors)
+#es.q1.ret.factors = es.q1.ret.factors["199302/201712"]
+#es.q10.ret.factors = es.q10.ret.factors["199302/201712"]
+#head(es.q1.ret.factors)
+#write.csv(es.q1.ret.factors, file="D:/亞洲大學碩士班指導論文/雅萍香玫/香玫/es_q1_ret_factors.csv")
+#es.q1 = es.q1.ret.factors[,-3:-4]
+cf.es.qi<-list()
+# i = 1
+for (i in 1:10){
+  temp.ret<-quantiles.tw$last.e_s$models[[i]]$ret 
+  temp.es.qi.ret.factors = merge(temp.ret, data.fa.tw$factors[,-4])
+  temp.es.qi.ret.factors = temp.es.qi.ret.factors["199302/201712"]
+  rolling <- function(x) coef(lm(X1101 ~ ., data = as.data.frame(x)))
+  #cf.es.q1 = rollapplyr(es.q1.ret.factors, 36, rolling, by.column = FALSE)
+  cf.es.qi[[i]] <- rollapplyr(temp.es.qi.ret.factors, 36, rolling, by.column = FALSE)
+  #cf.es.q10 = rollapplyr(es.q10.ret.factors, 36, rolling, by.column = FALSE)
+  #head(cf.es.qi[[1]],40)
+  #tail(cf.es.qi[[1]])
+}  
+
+head(cf.es.qi[[10]], 40)
+#
+plot(na.trim(cf.es.qi[[1]][, 2:4]), ylim = c(-0.8, 1.5))
+# 
+tmp<-cf.es.qi[[1]][,2:4]["1996/2017"]
+colnames(tmp)<-c("MKP", "SMB", "HML")
+cf.es.pg = fortify(na.trim(tmp), melt = TRUE)
+head(cf.es.pg)
+dim(cf.es.pg)
+label.dat = fortify(tail(cf.es.qi[[1]][,2:4],1), melt=TRUE)
+#
+title = "Dynamic factor exposures for equal-weighted residual portfolio (Q1)"
+#title = paste(title, 'based on quintiles of residual returns')
+#gp= ggplot(cf.es.pg, aes(x=Index, y=Value, group = Series)) +
+gg11_cf_res_equal<-ggplot(cf.es.pg, aes(x=Index, y=Value, group = Series, color=Series)) +  
   geom_line(aes(linetype=Series)) +
-  geom_line(data = cf.ret.pg, aes(linetype = Series), color="red")+
-  scale_linetype_manual(values=c("solid", "dotdash",  "longdash"))+
-  #scale_color_manual(values=c( "black", "#666666", "grey","black", "#666666", "grey")+
-  #geom_point(aes(shape=Series))+
-  xlab("") + ylab("Factor exposures")+
+  xlab("year") + ylab("coefficient")+
   #scale_x_datetime(breaks = date_breaks("1 year"),labels = date_format("%Y"))+
-  geom_text(data = label.dat, aes(x=Index,y=Value, label = Series), hjust = -0.1)+
+  geom_text(data = label.dat, aes(x = Index, y= Value, label = Series), 
+            hjust = 0.1, size=3, color= 'black', parse = TRUE)+
   ggtitle(title) +
-  theme(plot.title=element_text(face="bold", size=12))+
-  theme(legend.position=c(0.8, 0.8))+
+  #theme(plot.title=element_text(face="bold", size=12))+
+  #theme(legend.position=c(0.8, 0.8))+
   #theme(legend.position="right")
   #theme(legend.justification=c(0,0), legend.position=c(0,0.6))+
-  theme(legend.text = element_text(colour="blue", size = 10, face = "bold")) +
-  geom_hline(yintercept=c(0,1),colour="#990000", linetype="solid")
+  #theme(legend.text = element_text(colour="blue", size = 10, face = "bold")) +
+  geom_hline(yintercept=c(1, 0.5, 0),colour="#990000", linetype="dashed")
+
+gg11_cf_res_equal
 #
-path_gp = paste("~/residual reversal/output/", "10Q_equity", sep="")
-ExportPlot(gp, path_gp) # run Expo
+path_gp = paste("./output/", "cf_res_equal_q1", sep="")
+ExportPlot(gg11_cf_res_equal, path_gp) # run Expo
+
 #-----------------------------------------------------------------
 # use plotly to plot 
 #-----------------------------------------------------------------
