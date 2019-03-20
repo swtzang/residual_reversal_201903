@@ -5,6 +5,8 @@
 ###############################################################################
 # purpose: draw lines of 3 factor model dynamic factor exposures 
 #===============================================================================
+# Reference: factor attribution analysis
+# https://systematicinvestor.wordpress.com/category/factor-model/
 rm(list=ls())
 #setInternet2(TRUE)
 con = gzcon(url('http://www.systematicportfolio.com/sit.gz', 'rb'))
