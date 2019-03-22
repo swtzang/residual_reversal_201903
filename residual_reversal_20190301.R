@@ -1893,9 +1893,7 @@ head(cf.equal.data)
 #------------------------------------------------------
 #mkp vs. mkp.1
 library(reshape2)
-cf.data.pg1 = fortify(cf.equal.data[,c(2,5)], melt = TRUE)
-cf.data.pg1 = melt(cf.equal.data[,c(2,5)], id.vars = c("MKP_ret", "MKP_res"))
-
+cf.data.pg1 = fortify(cf.equal.data[,c(2,5)])
 head(cf.data.pg1)
 #------------------------------------------------------
 ggplot(cf.data.pg1, aes(x = Value, fill = Series)) + 
