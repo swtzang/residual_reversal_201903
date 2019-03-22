@@ -1475,7 +1475,7 @@ q10.ret.factors = q10.ret.factors["199302/201712"]
 head(q1.ret.factors)
 #write.csv(es.q1.ret.factors, file="D:/亞洲大學碩士班指導論文/雅萍香玫/香玫/es_q1_ret_factors.csv")
 #es.q1 = es.q1.ret.factors[,-3:-4]
-cf.ret.qi<-list()
+cf.ret.qi.equal<-list()
 # i = 1
 for (i in 1:10){
   temp.ret<-quantiles.tw$one.month$models[[i]]$ret 
@@ -1483,19 +1483,19 @@ for (i in 1:10){
   temp.qi.ret.factors = temp.qi.ret.factors["199302/201712"]
   rolling <- function(x) coef(lm(X1101 ~ ., data = as.data.frame(x)))
   #cf.es.q1 = rollapplyr(es.q1.ret.factors, 36, rolling, by.column = FALSE)
-  cf.ret.qi[[i]] <- rollapplyr(temp.qi.ret.factors, 36, rolling, by.column = FALSE)
+  cf.ret.qi.equal[[i]] <- rollapplyr(temp.qi.ret.factors, 36, rolling, by.column = FALSE)
   #cf.es.q10 = rollapplyr(es.q10.ret.factors, 36, rolling, by.column = FALSE)
   #head(cf.es.qi[[1]],40)
   #tail(cf.ret.qi[[1]])
 }  
 
-head(cf.ret.qi[[10]], 40)
-tail(cf.ret.qi[[10]], 1)
+head(cf.ret.qi.equal[[10]], 40)
+tail(cf.ret.qi.equal[[10]], 1)
 par(mfrow=c(1,1))
-plot(na.trim(cf.ret.qi[[1]][, 2:4]), ylim = c(-0.8, 1.5))
+plot(na.trim(cf.ret.qi.equal[[1]][, 2:4]), ylim = c(-0.8, 1.5))
 # use ggplot to replot the figure
 #colnames(cf.ret.cap.qi[[1]][,2:4])<-c("mkt", "SMB", "HML")
-tmp<-cf.ret.qi[[1]][, 2:4]["1996/2017"]
+tmp<-cf.ret.qi.equal[[1]][, 2:4]["1996/2017"]
 colnames(tmp)<-c("MKP", "SMB", "HML")
 label.dat = fortify(tail(tmp,1), melt=TRUE)
 cf.ret.q1.long<-fortify(tmp, melt = TRUE)
@@ -1531,7 +1531,7 @@ data.fa.tw$factors.ind<-lag(data.fa.tw$factors.ind, -1)
 head(data.fa.tw$factors.ind)
 data.fa.tw$factors.ind<-as.xts(data.fa.tw$factors.ind)["199302/201712"]
 head(data.fa.tw$factors.ind)
-colnames(data.fa.tw$factors.ind)<-c("mkp_up", "SMB_up", "HML_up")
+colnames(data.fa.tw$factors.ind)<-c("MKP_up", "SMB_up", "HML_up")
 # 
 est.parm<-matrix(data = NA, nrow=30, ncol =8)
 # i=1
@@ -1541,7 +1541,7 @@ for (i in 1:10){
   ret.qi.ret.factors_up<-merge(ret.qi.ret.factors, data.fa.tw$factors.ind)
   #head(ret.q1.ret.factors_up)
   # run EQ(15) regression
-  eq15.ret.qi<-lm(X1101 ~ mkp+SMB+HML+mkp_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors_up))
+  eq15.ret.qi<-lm(X1101 ~ mkp+SMB+HML+MKP_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors_up))
   #summary(eq15.ret.q1)
   # create regression results in tables using huxreg()
   #huxreg(eq15.ret.q1)
@@ -1589,7 +1589,7 @@ for (i in 1:10){
   ret.qi.ret.factors_up<-merge(ret.qi.ret.factors, data.fa.tw$factors.ind)
   #head(ret.q1.ret.factors_up)
   # run EQ(15) regression
-  eq15.ret.qi<-lm(X1101 ~ mkp+SMB+HML+mkp_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors_up))
+  eq15.ret.qi<-lm(X1101 ~ mkp+SMB+HML+MKP_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors_up))
   #summary(eq15.ret.q1)
   # create regression results in tables using huxreg()
   #huxreg(eq15.ret.q1)
@@ -1637,7 +1637,7 @@ for (i in 1:10){
   ret.qi.ret.factors_up<-merge(ret.qi.ret.factors, data.fa.tw$factors.ind)
   #head(ret.q1.ret.factors_up)
   # run EQ(15) regression
-  eq15.ret.qi<-lm(X1101 ~ mkp+SMB+HML+mkp_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors_up))
+  eq15.ret.qi<-lm(X1101 ~ mkp+SMB+HML+MKP_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors_up))
   #summary(eq15.ret.q1)
   # create regression results in tables using huxreg()
   #huxreg(eq15.ret.q1)
@@ -1674,7 +1674,7 @@ est.parm.es.eq.df
 # http://www.tablesgenerator.com/latex_tables
 # we can use latex table generator to generate tables
 #-------------------------------------------------------------------------------
-# 4 .Repeat the above codings again to compute Residual Reversal 
+# 4 Repeat the above codings again to compute Residual Reversal 
 # strategy based on Cap weighting
 #------------------------------------------------------------------
 est.parm.es.cap<-matrix(data = NA, nrow=30, ncol =8)
@@ -1685,7 +1685,7 @@ for (i in 1:10){
   ret.qi.ret.factors_up<-merge(ret.qi.ret.factors, data.fa.tw$factors.ind)
   #head(ret.q1.ret.factors_up)
   # run EQ(15) regression
-  eq15.ret.qi<-lm(X1101 ~ mkp+SMB+HML+mkp_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors_up))
+  eq15.ret.qi<-lm(X1101 ~ mkp+SMB+HML+MKP_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors_up))
   #summary(eq15.ret.q1)
   # create regression results in tables using huxreg()
   #huxreg(eq15.ret.q1)
@@ -1729,6 +1729,7 @@ est.parm.es.cap.df
 es.q1.ret = quantiles.tw$last.e_s$models_cap$last.e_s_Q1$ret
 es.q10.ret = quantiles.tw$last.e_s$models_cap$last.e_s_Q10$ret
 head(data.fa.tw$factors)
+colnames(data.fa.tw$factors)<-c("MKP", "SMB", "HML", "RF")
 head(es.q1.ret)
 #es.q1.ret.factors = merge(es.q1.ret, data.fa.tw$factors[,-4])
 #es.q10.ret.factors = merge(es.q10.ret, data.fa.tw$factors[,-4])
@@ -1738,7 +1739,7 @@ head(es.q1.ret)
 #head(es.q1.ret.factors)
 #write.csv(es.q1.ret.factors, file="D:/亞洲大學碩士班指導論文/雅萍香玫/香玫/es_q1_ret_factors.csv")
 #es.q1 = es.q1.ret.factors[,-3:-4]
-cf.es.qi<-list()
+cf.es.qi.cap<-list()
 # i = 1
 for (i in 1:10){
   temp.ret<-quantiles.tw$last.e_s$models_cap[[i]]$ret 
@@ -1746,26 +1747,26 @@ for (i in 1:10){
   temp.es.qi.ret.factors = temp.es.qi.ret.factors["199302/201712"]
   rolling <- function(x) coef(lm(X1101 ~ ., data = as.data.frame(x)))
   #cf.es.q1 = rollapplyr(es.q1.ret.factors, 36, rolling, by.column = FALSE)
-  cf.es.qi[[i]] <- rollapplyr(temp.es.qi.ret.factors, 36, rolling, by.column = FALSE)
+  cf.es.qi.cap[[i]] <- rollapplyr(temp.es.qi.ret.factors, 36, rolling, by.column = FALSE)
   #cf.es.q10 = rollapplyr(es.q10.ret.factors, 36, rolling, by.column = FALSE)
   #head(cf.es.qi[[1]],40)
   #tail(cf.es.qi[[1]])
 }  
 
-head(cf.es.qi[[10]], 40)
+head(cf.es.qi.cap[[10]], 40)
 #
-plot(na.trim(cf.es.qi[[1]][, 2:4]), ylim = c(-0.8, 1.5))
+plot(na.trim(cf.es.qi.cap[[1]][, 2:4]), ylim = c(-0.8, 1.5))
 # 
-tmp<-cf.es.qi[[1]][,2:4]["1996/2017"]
+tmp<-cf.es.qi.cap[[1]][,2:4]["1996/2017"]
 colnames(tmp)<-c("MKP", "SMB", "HML")
 cf.es.pg = fortify(na.trim(tmp), melt = TRUE)
 head(cf.es.pg)
 dim(cf.es.pg)
 #
-cf.ret.pg = fortify(na.trim(cf.ret.qi[[1]][,2:4]), melt = TRUE)
-dim(cf.ret.pg)
-head(cf.ret.pg)
-label.dat = fortify(tail(cf.es.qi[[1]][,2:4],1), melt=TRUE)
+#cf.ret.pg = fortify(na.trim(cf.ret.qi[[1]][,2:4]), melt = TRUE)
+#dim(cf.ret.pg)
+#head(cf.ret.pg)
+label.dat = fortify(tail(cf.es.qi.cap[[1]][,2:4],1), melt=TRUE)
 #
 title = "Dynamic factor exposures for cap-weighted residual portfolio (Q1)"
 #title = paste(title, 'based on quintiles of residual returns')
@@ -1802,7 +1803,7 @@ head(es.q1.ret)
 #head(es.q1.ret.factors)
 #write.csv(es.q1.ret.factors, file="D:/亞洲大學碩士班指導論文/雅萍香玫/香玫/es_q1_ret_factors.csv")
 #es.q1 = es.q1.ret.factors[,-3:-4]
-cf.es.qi<-list()
+cf.es.qi.equal<-list()
 # i = 1
 for (i in 1:10){
   temp.ret<-quantiles.tw$last.e_s$models[[i]]$ret 
@@ -1810,22 +1811,22 @@ for (i in 1:10){
   temp.es.qi.ret.factors = temp.es.qi.ret.factors["199302/201712"]
   rolling <- function(x) coef(lm(X1101 ~ ., data = as.data.frame(x)))
   #cf.es.q1 = rollapplyr(es.q1.ret.factors, 36, rolling, by.column = FALSE)
-  cf.es.qi[[i]] <- rollapplyr(temp.es.qi.ret.factors, 36, rolling, by.column = FALSE)
+  cf.es.qi.equal[[i]] <- rollapplyr(temp.es.qi.ret.factors, 36, rolling, by.column = FALSE)
   #cf.es.q10 = rollapplyr(es.q10.ret.factors, 36, rolling, by.column = FALSE)
   #head(cf.es.qi[[1]],40)
   #tail(cf.es.qi[[1]])
 }  
 
-head(cf.es.qi[[10]], 40)
+head(cf.es.qi.equal[[10]], 40)
 #
-plot(na.trim(cf.es.qi[[1]][, 2:4]), ylim = c(-0.8, 1.5))
+plot(na.trim(cf.es.qi.equal[[1]][, 2:4]), ylim = c(-0.8, 1.5))
 # 
-tmp<-cf.es.qi[[1]][,2:4]["1996/2017"]
+tmp<-cf.es.qi.equal[[1]][,2:4]["1996/2017"]
 colnames(tmp)<-c("MKP", "SMB", "HML")
 cf.es.pg = fortify(na.trim(tmp), melt = TRUE)
 head(cf.es.pg)
 dim(cf.es.pg)
-label.dat = fortify(tail(cf.es.qi[[1]][,2:4],1), melt=TRUE)
+label.dat = fortify(tail(cf.es.qi.equal[[1]][,2:4],1), melt=TRUE)
 #
 title = "Dynamic factor exposures for equal-weighted residual portfolio (Q1)"
 #title = paste(title, 'based on quintiles of residual returns')
@@ -1851,34 +1852,55 @@ ExportPlot(gg11_cf_res_equal, path_gp) # run Expo
 
 #-----------------------------------------------------------------
 # use plotly to plot 
+# compare coefficient of equal-weighted resdial and return Q1 separately
 #-----------------------------------------------------------------
 library(plotly)
-cf.data<-cbind(cf.ret = cf.ret.qi[[1]][,2:4],
-                       cf.res = cf.es.qi[[1]][,2:4])
-cf.data<-data.frame(date=index(cf.data), coredata(cf.data))
-cf.data<-na.trim(cf.data)
-colnames(cf.data)<-c("date", "mkp", "SMB", "HML", "mkp.1", "SMB.1", "HML.1")
-#=============================================================================
-p1<-plot_ly(data=cf.data, x=~date, y=~mkp, name='mkp_ret',type = 'scatter', mode='lines') %>%
-  add_trace(y=~mkp.1, name='mkp_res', mode = 'lines+markers')
-p2<-plot_ly(data=cf.data, x=~date, y=~SMB, name='SMB_ret',type = 'scatter', mode='lines') %>%
-  add_trace(y=~SMB.1, name='SMB_res', mode = 'lines+markers')
-p3<-plot_ly(data=cf.data, x=~date, y=~HML, name='HML_ret',type = 'scatter', mode='lines') %>%
-  add_trace(y=~HML.1, name='HML_res', mode = 'lines+markers')
-#---------------------------------------------------------------------------------------
+cf.equal.data<-cbind(cf.ret = cf.ret.qi.equal[[1]][,2:4],
+                       cf.res = cf.es.qi.equal[[1]][,2:4])
+cf.equal.data<-data.frame(date=index(cf.equal.data), coredata(cf.equal.data))
+cf.equal.data<-na.trim(cf.equal.data)
+colnames(cf.equal.data)<-c("date", "MKP_ret", "SMB_ret", "HML_ret", "MKP_res", "SMB_res", "HML_res")
+head(cf.equal.data)
+#---
+p1<-plot_ly(data=cf.equal.data, x=~date, y=~MKP_ret, name='MKP_ret',type = 'scatter', mode='lines') %>%
+  add_trace(y=~MKP_res, name='MKP_res', mode = 'lines+markers') %>% 
+  layout(xaxis = list(title = "year"), yaxis = list(title = "MKP"))
+p1
+# export graph of plotly
+#if (!require("processx")) install.packages("processx")
+library(processx)
+path_gp = paste("./output/", "cf_equal_q1_mkp", sep="")
+orca(p1, path_gp)
+#
+p2<-plot_ly(data=cf.equal.data, x=~date, y=~SMB_ret, name='SMB_ret',type = 'scatter', mode='lines') %>%
+  add_trace(y=~SMB_res, name='SMB_res', mode = 'lines+markers') %>% 
+  layout(xaxis = list(title = "year"), yaxis = list(title = "SMB"))
+p2
+#
+p3<-plot_ly(data=cf.equal.data, x=~date, y=~HML_ret, name='HML_ret',type = 'scatter', mode='lines') %>%
+  add_trace(y=~HML_res, name='HML_res', mode = 'lines+markers') %>% 
+  layout(xaxis = list(title = "year"), yaxis = list(title = "HML"))
+p3
+#---------------------------------------
+# plot distribution of coefficients
+#---------------------------------------
 #ggplot(cf.data, aes(x = dens, fill = lines)) + geom_density(alpha = 0.5)
-cf.data.gg<-cbind(cf.ret = cf.ret.qi[[1]][,2:4],
-                  cf.res = cf.es.qi[[1]][,2:4])
-head(cf.data.gg)
-colnames(cf.data.gg)<-c("mkp", "SMB", "HML", "mkp.1", "SMB.1", "HML.1")
-cf.data.gg<-na.trim(cf.data.gg)
+#cf.data.gg<-cbind(cf.ret = cf.ret.qi[[1]][,2:4],
+#                  cf.res = cf.es.qi[[1]][,2:4])
+head(cf.equal.data)
+#colnames(cf.data.gg)<-c("mkp", "SMB", "HML", "mkp.1", "SMB.1", "HML.1")
+#cf.data.gg<-na.trim(cf.data.gg)
 #------------------------------------------------------
 #mkp vs. mkp.1
-cf.data.pg1 = fortify(cf.data.gg[,c(1,4)], melt = TRUE)
+library(reshape2)
+cf.data.pg1 = fortify(cf.equal.data[,c(2,5)], melt = TRUE)
+cf.data.pg1 = melt(cf.equal.data[,c(2,5)], id.vars = c("MKP_ret", "MKP_res"))
+
 head(cf.data.pg1)
 #------------------------------------------------------
-ggplot(cf.data.pg1, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3)+
-  scale_x_continuous(limits =c(0.6, 1.5))
+ggplot(cf.data.pg1, aes(x = Value, fill = Series)) + 
+      geom_density(alpha = 0.3)+
+      scale_x_continuous(limits=c(0.6, 1.5))
 #
 # SMB vs. SM B.1
 cf.data.pg2 = fortify(cf.data.gg[,c(2,5)], melt = TRUE)
@@ -2040,7 +2062,7 @@ write.csv(coeff.meds.ret, file="~/residual reversal/output/coeff_meds_ret_10Q.cs
 i=1
 cf.es.q1 = cf.es.qi[[i]]
 i=10
-cf.es.q10 cf.es.qi[[10]]
+cf.es.q10 <-cf.es.qi[[10]]
 for (i in 1:3){
   cf.q1 = cf.es.q1[,i+1]
   cf.q10 = cf.es.q10[,i+1]
