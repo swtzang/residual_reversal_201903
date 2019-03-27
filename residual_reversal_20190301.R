@@ -58,6 +58,7 @@ setwd("~/git/residual_reversal_201903")
 m.price = read.table("./data/TWSE_1990_2017_m_close1.TXT")
 m.price<-m.price[,-2]
 colnames(m.price)<-c("id", "date", "close")
+write.csv(m.price, "m_price.csv")
 # use dcast to reorder dataframe by date;
 mprice.reorder = dcast(m.price,date~id)
 dim(mprice.reorder)
@@ -80,6 +81,8 @@ dim(mprice.reorder.xts)
 m.cap = read.table("./data/TWSE_1990_2017_m_cap.txt", fileEncoding = 'UTF-8')
 m.cap<-m.cap[,-2]
 colnames(m.cap)<-c("id", "date", "cap")
+head(m.cap)
+write.csv(m.cap, "m_cap.csv")
 # use dcast to reorder dataframe by date;
 mcap.reorder = dcast(m.cap,date~id)
 dim(mcap.reorder)
