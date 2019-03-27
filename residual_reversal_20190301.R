@@ -1893,21 +1893,29 @@ head(cf.equal.data)
 #------------------------------------------------------
 #mkp vs. mkp.1
 library(reshape2)
-cf.data.pg1 = fortify(cf.equal.data[,c(2,5)])
+cf.data.pg1 = melt(cf.equal.data[,c(1,2,5)], id = "date")
 head(cf.data.pg1)
 #------------------------------------------------------
-ggplot(cf.data.pg1, aes(x = Value, fill = Series)) + 
+ggplot(cf.data.pg1, aes(x = value, fill = variable)) + 
       geom_density(alpha = 0.3)+
       scale_x_continuous(limits=c(0.6, 1.5))
-#
+#------------------------------------------------------------
 # SMB vs. SM B.1
-cf.data.pg2 = fortify(cf.data.gg[,c(2,5)], melt = TRUE)
+cf.data.pg2 = melt(cf.equal.data[,c(1,3,6)], id = "date")
 head(cf.data.pg2)
-#------------------------------------------------------
-ggplot(cf.data.pg2, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3)
-  #scale_x_continuous(limits =c(0.6, 1.5))
+#--
+ggplot(cf.data.pg2, aes(x = value, fill = variable)) +
+    geom_density(alpha = 0.3)+
+    scale_x_continuous(limits =c(0, 1.5))
+#------------------------------------------------------------
+# HML vs. HML.1
+cf.data.pg3 = melt(cf.equal.data[,c(1,4,7)], id = "date")
+head(cf.data.pg3)
+#--
+ggplot(cf.data.pg3, aes(x = value, fill = variable)) +
+  geom_density(alpha = 0.3)+
+  scale_x_continuous(limits =c(-0.6, 1.5))
 #
-
 
 
 
