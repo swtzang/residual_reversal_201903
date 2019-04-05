@@ -123,6 +123,7 @@ dim(ff4f.tw)
 ff4f.tw[]<-lapply(ff4f.tw, function(x) as.numeric(as.character(x)))
 #ff4f.tw%>%lapply(function(x) as.numeric(as.character(x)))
 str(ff4f.tw)
+head(ff4f.tw)
 #convert to xts
 ff4f.tw = ff4f.tw[,-1]
 ff4f.tw.xts<-xts(ff4f.tw, order.by = date)
@@ -1351,7 +1352,7 @@ gg20<- ggplot(ret_res_equal.long, aes(x=Index, y=Value, group = Series)) +
         legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid", 
                                          colour ="darkblue"))+
   geom_rect(data = recess, aes(xmin = begin, xmax = end, ymin = -Inf, ymax = +Inf),
-            inherit.aes = FALSE, fill = "red", alpha = 0.4)+ 
+            inherit.aes = FALSE, fill = "grey", alpha = 0.7)+ 
             xlab("year") + ylab("value")
 #
 gg20
@@ -1852,12 +1853,23 @@ gg11_cf_res_equal
 #
 path_gp = paste("./output/", "cf_res_equal_q1", sep="")
 ExportPlot(gg11_cf_res_equal, path_gp) # run Expo
-
+#------
+library(ggpubr)
+cf.all.gg<-ggarrange(gg11_cf_res_equal, gg11_cf_res_cap, 
+          gg1_cf_equal, gg1_cf_cap,
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+path_gp = paste("./output/", "cf_all_gg", sep="")
+ExportPlot(cf.all.gg, path_gp) # run Expo
+#
 #-----------------------------------------------------------------
-# use plotly to plot 
+# Following is the plotting of single factor coefficients across 
+# traditional return reversal and residual reversal strategies.
+# Use plotly to plot 
 # compare coefficient of equal-weighted resdial and return Q1 separately
 #-----------------------------------------------------------------
 library(plotly)
+library(magrittr)
 cf.equal.data<-cbind(cf.ret = cf.ret.qi.equal[[1]][,2:4],
                        cf.res = cf.es.qi.equal[[1]][,2:4])
 cf.equal.data<-data.frame(date=index(cf.equal.data), coredata(cf.equal.data))
@@ -1884,7 +1896,13 @@ p3<-plot_ly(data=cf.equal.data, x=~date, y=~HML_ret, name='HML_ret',type = 'scat
   add_trace(y=~HML_res, name='HML_res', mode = 'lines+markers') %>% 
   layout(xaxis = list(title = "year"), yaxis = list(title = "HML"))
 p3
-#---------------------------------------
+#-------------------------------------------
+head(cf.equal.data)
+summary(coredata(cf.equal.data[,-1]))
+library(psych)
+describe(coredata(cf.equal.data[,-1]))
+
+#--------------------------------------------
 # plot distribution of coefficients
 #---------------------------------------
 #ggplot(cf.data, aes(x = dens, fill = lines)) + geom_density(alpha = 0.5)
@@ -1899,51 +1917,76 @@ library(reshape2)
 cf.data.pg1 = melt(cf.equal.data[,c(1,2,5)], id = "date")
 head(cf.data.pg1)
 #------------------------------------------------------
-ggplot(cf.data.pg1, aes(x = value, fill = variable)) + 
-      geom_density(alpha = 0.3)+
-      scale_x_continuous(limits=c(0.6, 1.5))
+# Reference:
+# https://rstudio-pubs-static.s3.amazonaws.com/228019_f0c39e05758a4a51b435b19dbd321c23.html
+mkp.gg<-ggplot(cf.data.pg1, aes(x = value, fill = variable)) + 
+      geom_density(aes(fill = variable), alpha = 0.5)+ theme_minimal()+
+      scale_x_continuous(limits=c(0.6, 1.5))+
+      #scale_fill_grey()
+      scale_fill_manual( values = c("white","grey"))
+      #geom_line(aes(linetype=variable, color=variable))
+      #scale_linetype_manual(values=c("twodash", "dotted"))
 #------------------------------------------------------------
 # SMB vs. SM B.1
 cf.data.pg2 = melt(cf.equal.data[,c(1,3,6)], id = "date")
 head(cf.data.pg2)
-#--
-ggplot(cf.data.pg2, aes(x = value, fill = variable)) +
-    geom_density(alpha = 0.3)+
-    scale_x_continuous(limits =c(0, 1.5))
+#-----------------------------------------------------------
+smb.gg<-ggplot(cf.data.pg2, aes(x = value, fill = variable)) +
+    geom_density(alpha = 0.5)+theme_minimal()+
+    scale_x_continuous(limits =c(0, 1.5))+
+    scale_fill_manual( values = c("white","grey"))
+
 #------------------------------------------------------------
 # HML vs. HML.1
 cf.data.pg3 = melt(cf.equal.data[,c(1,4,7)], id = "date")
 head(cf.data.pg3)
 #--
-ggplot(cf.data.pg3, aes(x = value, fill = variable)) +
-  geom_density(alpha = 0.3)+
-  scale_x_continuous(limits =c(-0.6, 1.5))
+hml.gg<-ggplot(cf.data.pg3, aes(x = value, fill = variable)) +
+  geom_density(alpha = 0.5)+theme_minimal()+
+  scale_x_continuous(limits =c(-0.6, 1.5))+
+  scale_fill_manual( values = c("white","grey"))
+
 #
-
-
+library(ggpubr)
+cf.all.dist<-ggarrange(mkp.gg, smb.gg, hml.gg,
+                     labels = c("A", "B", "C"),
+                     ncol = 3, nrow = 1, 
+                     legend = "bottom")
+cf.all.dist
+path_gp = paste("./output/", "cf_all_dist", sep="")
+ExportPlot(cf.all.dist, path_gp) 
 
 #-------------------------------------------------------------
-#計算Table 1 panel A run rolling regression by eq(15)
+#計算Blitz's Table 1 panel A run rolling regression by eq(15)
 # Residual Reversal model based on Cap Weighting
 #-------------------------------------------------------------
 # create interaction variables with three factors:
-data.fa.tw$factors.lag<-lag(data.fa.tw$factors)
+# delete RF column
+data.fa.tw$factors.lag<-lag(data.fa.tw$factors[,-4])
+head(data.fa.tw$factors.lag)
+dim(data.fa.tw$factors.lag)
+#
 data.fa.tw$factors.ind<-apply(data.fa.tw$factors.lag, 2, function(x) ifelse((x>0), x, 0))
 head(data.fa.tw$factors.ind)
-# delete RF column
-data.fa.tw$factors.ind<-data.fa.tw$factors.ind[,-4]
-data.fa.tw$factors.ind<-as.xts(data.fa.tw$factors.ind)["199302/201712"]
-head(data.fa.tw$factors.ind)
-colnames(data.fa.tw$factors.ind)<-c("mkp_up", "SML_up", "HML_up")
-# 
+dim(data.fa.tw$factors.ind)
+#
+colnames(data.fa.tw$factors.ind)<-c("MKP_up", "SMB_up", "HML_up")
+# reset time zone to ensure correct alignment of dates
+Sys.setenv(TZ='GMT')
+data.fa.tw$factors.merge<-merge(data.fa.tw$factors.lag, data.fa.tw$factors.ind)
+head(data.fa.tw$factors.merge)
+#
 est.parm.es<-matrix(data = NA, nrow=30, ncol =8)
+#library(lmtest)
+#library(sandwich)
+i=1
 for (i in 1:10){
 ret.qi<-quantiles.tw$last.e_s$models_cap[[i]]$ret 
-ret.qi.ret.factors<-merge(ret.qi, data.fa.tw$factors[,-4])['199302/201712']
-ret.qi.ret.factors_up<-merge(ret.qi.ret.factors, data.fa.tw$factors.ind)
-#head(ret.q1.ret.factors_up)
+ret.qi.ret.factors<-merge(ret.qi, data.fa.tw$factors.merge)['199302/201712']
+#ret.qi.ret.factors_up<-merge(ret.qi.ret.factors, data.fa.tw$factors.ind)
+#head(ret.qi.ret.factors)
 # run EQ(15) regression
-eq15.ret.qi<-lm(X1101 ~ mkp+SML+HML+mkp_up+SML_up+HML_up, data=as.data.frame(ret.qi.ret.factors_up))
+eq15.ret.qi<-lm(X1101 ~ MKP+SMB+HML+MKP_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors))
 #summary(eq15.ret.q1)
 # create regression results in tables using huxreg()
 #huxreg(eq15.ret.q1)
@@ -1971,7 +2014,7 @@ est.parm.es[3*(i-1)+3, 1:7]<-nw.t.out[,4]
 }
 
 est.parm.es.df<-as.data.frame(est.parm.es)
-colnames(est.parm.es.df)<-c("alpha","mkp", "SML", "HML", "mkp_up", "SML_up", "HML_up", "adjR2")
+colnames(est.parm.es.df)<-c("alpha","MKP", "SMB", "HML", "MKP_up", "SMB_up", "HML_up", "adjR2")
 #rownames(est.parm.df)<-rep(c("coef", "t-value", "p-value"), 10)
 est.parm.es.df
 options("scipen"=10, "digits"= 3)
@@ -1986,6 +2029,7 @@ est.parm.es.df[3*(i-1)+2, ] <- paste0("(", format(unlist(est.parm.es.df[3*(i-1)+
 
 est.parm.es.df
 # est.parm.df
+library(xtable)
 my.xtable<-xtable(x = est.parm.es.df, 
                   label = 'tab:ParmResRevCap',
                   caption = "Dynamic factor exposures based on cap-weighted residual reversal",
@@ -1993,17 +2037,143 @@ my.xtable<-xtable(x = est.parm.es.df,
 my.xtable
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table3_factor_param_res_capw.tex',
+      file = '~/git/residual_reversal_201903/output/tables/table3_factor_param_res_capw.tex',
       type = 'latex')
-
-
-
-
 #write.csv(eq15.ret.q1, "~/residual reversal/output/eq15.ret.Q1.csv")
 #-----------------------------------------------------------------------
+# 計算Blitz's Table 1 panel A run rolling regression by eq(15)
+# Residual Reversal model based on equal Weighting
+est.parm.es<-matrix(data = NA, nrow=30, ncol =8)
+#library(lmtest)
+#library(sandwich)
+i=1
+for (i in 1:10){
+  ret.qi<-quantiles.tw$last.e_s$models[[i]]$ret 
+  ret.qi.ret.factors<-merge(ret.qi, data.fa.tw$factors.merge)['199302/201712']
+  #ret.qi.ret.factors_up<-merge(ret.qi.ret.factors, data.fa.tw$factors.ind)
+  #head(ret.qi.ret.factors)
+  # run EQ(15) regression
+  eq15.ret.qi<-lm(X1101 ~ MKP+SMB+HML+MKP_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors))
+  #summary(eq15.ret.q1)
+  # create regression results in tables using huxreg()
+  #huxreg(eq15.ret.q1)
+  # Newey West standard errors correction for serial correlation
+  nw.t.out<-coeftest(eq15.ret.qi, vcov=NeweyWest(eq15.ret.qi, verbose=T))
+  #nw.t.out
+  #nw.t.out[1,]
+  #huxreg(nw.t.out)
+  #print_latex(eq15.ret.Q1)
+  #print_screen(eq15.ret.q1)
+  #output summary into table
+  options(digits = 4)
+  options(scipen=30)
+  #eq15.ret.qi<-rbind(out, adjR2 = summary(eq15.ret.qi)$adj.r.squared)
+  #options("scipen"=30, "digits"=4)
+  #eq15.ret.q1
+  #est.parm<-matrix(data = NA, nrow=30, ncol =7)
+  est.parm.es[3*(i-1)+1, 8]<-summary(eq15.ret.qi)$adj.r.squared
+  # estimated coefficients
+  est.parm.es[3*(i-1)+1, 1:7]<-nw.t.out[,1]
+  # estimated t values
+  est.parm.es[3*(i-1)+2, 1:7]<-nw.t.out[,3]
+  # p values
+  est.parm.es[3*(i-1)+3, 1:7]<-nw.t.out[,4]
+}
 
+est.parm.es.df<-as.data.frame(est.parm.es)
+colnames(est.parm.es.df)<-c("alpha","MKP", "SMB", "HML", "MKP_up", "SMB_up", "HML_up", "adjR2")
+#rownames(est.parm.df)<-rep(c("coef", "t-value", "p-value"), 10)
+est.parm.es.df
+options("scipen"=10, "digits"= 3)
+#options("digits"= 3)
+est.parm.es.df
+# http://www.tablesgenerator.com/latex_tables
+# we can use latex table generator to generate tables
+# add parenthesis to t-values
+for (i in 1:10){
+  est.parm.es.df[3*(i-1)+2, ] <- paste0("(", format(unlist(est.parm.es.df[3*(i-1)+2,])),")")
+}
+
+est.parm.es.df
+# est.parm.df
+library(xtable)
+my.xtable<-xtable(x = est.parm.es.df, 
+                  label = 'tab:ParmResRevCap',
+                  caption = "Dynamic factor exposures based on cap-weighted residual reversal",
+                  digits = 3)
+my.xtable
+
+print(my.xtable, include.rownames = TRUE,
+      file = '~/git/residual_reversal_201903/output/tables/table3_factor_param_res_equal.tex',
+      type = 'latex')
+#-----------------------------------------------------------------------
+# 計算Blitz's Table 1 panel A run rolling regression by eq(15)
+# Return Reversal model based on equal Weighting
+est.parm.ret<-matrix(data = NA, nrow=30, ncol =8)
+#library(lmtest)
+#library(sandwich)
+i=1
+for (i in 1:10){
+  ret.qi<-quantiles.tw$one.month$models[[i]]$ret 
+  ret.qi.ret.factors<-merge(ret.qi, data.fa.tw$factors.merge)['199302/201712']
+  #ret.qi.ret.factors_up<-merge(ret.qi.ret.factors, data.fa.tw$factors.ind)
+  #head(ret.qi.ret.factors)
+  # run EQ(15) regression
+  eq15.ret.qi<-lm(X1101 ~ MKP+SMB+HML+MKP_up+SMB_up+HML_up, data=as.data.frame(ret.qi.ret.factors))
+  #summary(eq15.ret.q1)
+  # create regression results in tables using huxreg()
+  #huxreg(eq15.ret.q1)
+  # Newey West standard errors correction for serial correlation
+  nw.t.out<-coeftest(eq15.ret.qi, vcov=NeweyWest(eq15.ret.qi, verbose=T))
+  #nw.t.out
+  #nw.t.out[1,]
+  #huxreg(nw.t.out)
+  #print_latex(eq15.ret.Q1)
+  #print_screen(eq15.ret.q1)
+  #output summary into table
+  options(digits = 4)
+  options(scipen=30)
+  #eq15.ret.qi<-rbind(out, adjR2 = summary(eq15.ret.qi)$adj.r.squared)
+  #options("scipen"=30, "digits"=4)
+  #eq15.ret.q1
+  #est.parm<-matrix(data = NA, nrow=30, ncol =7)
+  est.parm.ret[3*(i-1)+1, 8]<-summary(eq15.ret.qi)$adj.r.squared
+  # estimated coefficients
+  est.parm.ret[3*(i-1)+1, 1:7]<-nw.t.out[,1]
+  # estimated t values
+  est.parm.ret[3*(i-1)+2, 1:7]<-nw.t.out[,3]
+  # p values
+  est.parm.ret[3*(i-1)+3, 1:7]<-nw.t.out[,4]
+}
+
+est.parm.ret.df<-as.data.frame(est.parm.ret)
+colnames(est.parm.ret.df)<-c("alpha","MKP", "SMB", "HML", "MKP_up", "SMB_up", "HML_up", "adjR2")
+#rownames(est.parm.df)<-rep(c("coef", "t-value", "p-value"), 10)
+est.parm.ret.df
+options("scipen"=10, "digits"= 3)
+#options("digits"= 3)
+est.parm.ret.df
+# http://www.tablesgenerator.com/latex_tables
+# we can use latex table generator to generate tables
+# add parenthesis to t-values
+for (i in 1:10){
+  est.parm.ret.df[3*(i-1)+2, ] <- paste0("(", format(unlist(est.parm.ret.df[3*(i-1)+2,])),")")
+}
+
+est.parm.ret.df
+# est.parm.df
+library(xtable)
+my.xtable<-xtable(x = est.parm.ret.df, 
+                  label = 'tab:ParmResRevCap',
+                  caption = "Dynamic factor exposures based on cap-weighted residual reversal",
+                  digits = 3)
+my.xtable
+
+print(my.xtable, include.rownames = TRUE,
+      file = '~/git/residual_reversal_201903/output/tables/table3_factor_param_ret_equal.tex',
+      type = 'latex')
 #***************************************
-# Replicate Table 4 in Blitz paper
+# Replicate Table 4 in Blitz paper: portfolio characteristics
 #計算估計FF model係數之中位數之平均值
 # Based on es-sorted portfolios
 #***************************************
@@ -2030,7 +2200,7 @@ for (k in 1:5){
 coeff.meds.es.df = as.data.frame(coeff.meds.es, row.names = c("b0","b1","b2","b3","r2"))
 colnames(coeff.meds.es.df) = c("Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10")
 coeff.meds.es.df
-write.csv(coeff.meds.es, file="~/residual reversal/output/coeff_meds_es_10Q_1006.csv")
+write.csv(coeff.meds.es, file="~/git/residual_reversal_201903/output/tables/coeff_meds_es_10Q.csv")
 
 #***************************************
 # Replicate Table 4 in Blitz paper
@@ -2057,7 +2227,7 @@ for (k in 1:length(coeff.tw)){
 coeff.meds.ret.df = as.data.frame(coeff.meds.ret, row.names = c("b0","b1","b2","b3","r2"))
 colnames(coeff.meds.ret.df) = c("Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10")
 coeff.meds.ret.df
-write.csv(coeff.meds.ret, file="~/residual reversal/output/coeff_meds_ret_10Q.csv")
+write.csv(coeff.meds.ret, file="~/git/residual_reversal_201903/output/tables/coeff_meds_ret_10Q.csv")
 #write.csv(coeff.meds.df, file="~/residual reversal/output/coeff_meds_10Q.csv")
 
 #***********************************
@@ -2555,7 +2725,7 @@ for (i in 1:n.quantiles){
   }
   colnames(name_stock_es[[i]])<-NULL
   filename1=paste(i,"q_es_stocknames.csv",sep="")
-  filename2=paste("~/residual reversal/output/", filename1,sep="")
+  filename2=paste("~/git/residual_reversal_201903/output/", filename1,sep="")
   write.csv(name_stock_es[[i]], file=filename2)
 }
 
