@@ -906,6 +906,8 @@ print(my.xtable, include.rownames = TRUE,
 #############################################################################
 # function to compute additional custom stats for factor.rolling.regression
 #############################################################################
+# factor.rolling.regression.custom.stats():
+# To return residuals and standardized residuals
 factor.rolling.regression.custom.stats <- function(x,y,fit) {
   n = len(y)
   e = y - x %*% fit$coefficients
@@ -930,9 +932,9 @@ data.tw.fprices<-data.tw$prices[, sapply(data.tw$prices, function(x)
 #將價格資料多於36筆的股票留下
 data.tw.ffprices<-data.tw.fprices[, sapply(data.tw.fprices, function(x) 
   sum(!is.na(x)))>36]                                  
-# data.tw.ffprices: 所有股票價格資料多於36筆的股票的收盤價格
+# data.tw.ffprices: 保留下所有股票價格資料多於36筆的股票的收盤價格
 head(data.tw.ffprices[1:10,1:5])
-dim(data.tw.ffprices) 
+dim(data.tw.ffprices)
 #由原本的920檔縮減為870檔股票
 tickers.tw.f<-colnames(data.tw.ffprices)
 tickers.tw.f
@@ -945,17 +947,18 @@ for(i in tickers.tw.f) data.fa.tw[[i]] = data.tw.ffprices[,i]
 ff3f.tw.xts<-ff4f.tw.xts[, -which(names(ff4f.tw.xts) == 'mom')]
 data.fa.tw$factors = ff3f.tw.xts / 100
 head(data.fa.tw$factors)
-colnames(data.fa.tw$factors)<-c("mkp", "SMB", "HML", "RF")
+colnames(data.fa.tw$factors)<-c("MKP", "SMB", "HML", "RF")
 #convert to annaul risk free rate monthly rate
 data.fa.tw$factors$RF<-data.fa.tw$factors$RF/12
 head(data.fa.tw$factors)
+names(data.fa.tw$factors)
 #bt.prep(data.fa.tw, align='remove.na')
 head(data.fa.tw[[i]])
 data.fa.tw$prices<-data.tw.ffprices
 data.fa.tw$weight<-data.tw.ffprices
 head(data.fa.tw$prices)
 ncol(data.fa.tw$prices)
-
+names(data.fa.tw)
 #test<-data.fa.tw$symbolnames[-grep('factor', data.fa.tw$symbolnames)]
 #test[1]
 #*****************************************************************
@@ -988,6 +991,61 @@ for(i in tickers.tw.f) {
 
   for (k in 1:len(coeff.tw))
     coeff.tw[[k]][,i] = obj.tw$fl$estimate[,k]
+  # obj.tw$fl$estimate[1:40, 1:5]
+}
+#------------------------------------------------------
+#*****************************************************************
+# Compute 3 factor + 3 up factor parameters for each ticker
+#******************************************************************   
+temp = NA * data.tw.ffprices
+head(temp)
+factors.up.tw	= list()
+factors.up.tw$last.e = temp
+factors.up.tw$last.e_s = temp
+#FF因子分析迴歸估計係數寫出
+coeff.up.tw = list()
+coeff.up.tw$b0 = temp #alpha
+coeff.up.tw$b1 = temp #market
+coeff.up.tw$b2 = temp #smb
+coeff.up.tw$b3 = temp #hml
+coeff.up.tw$b4 = temp #market up
+coeff.up.tw$b5 = temp #smb up
+coeff.up.tw$b6 = temp #hml up
+coeff.up.tw$r2 = temp #R-squared
+# add up lagged factor returns to data.tw.fa as new factor return series
+data.fa.tw.up<-data.fa.tw
+data.fa.tw.up$factors.lag<-lag(data.fa.tw$factors)
+head(data.fa.tw.up$factors.lag)
+dim(data.fa.tw.up$factors.lag)
+#
+data.fa.tw.up$factors.ind<-apply(data.fa.tw.up$factors.lag[,-4], 2, function(x) ifelse((x>0), x, 0))
+head(data.fa.tw.up$factors.ind)
+dim(data.fa.tw.up$factors.ind)
+#
+colnames(data.fa.tw.up$factors.ind)<-c("MKP_up", "SMB_up", "HML_up")
+# reset time zone to ensure correct alignment of dates
+Sys.setenv(TZ='GMT')
+data.fa.tw.up$factors.merge<-merge(data.fa.tw.up$factors.lag, data.fa.tw.up$factors.ind)
+head(data.fa.tw.up$factors.merge)
+#replace 3 factor returns in data.fa.tw$factors with 3 factors + 3 up factor returns
+data.fa.tw.up$factors<-data.fa.tw.up$factors.merge
+head(data.fa.tw.up$factors)
+#
+i="1101"
+j=1 # j: factor coefficients
+k=1
+for(i in tickers.tw.f) {
+  cat(i, '\n')
+  
+  # Factor Loadings Regression
+  obj.tw = factor.rolling.regression(data.fa.tw.up, i, 36, silent=T,
+                                     factor.rolling.regression.custom.stats)
+  
+  for(j in 1:len(factors.up.tw))		
+    factors.up.tw[[j]][,i] = obj.tw$fl$custom[,j]
+  
+  for (k in 1:len(coeff.up.tw))
+    coeff.up.tw[[k]][,i] = obj.tw$fl$estimate[,k]
   # obj.tw$fl$estimate[1:40, 1:5]
 }
 #-------------------------------------------------------
@@ -1876,7 +1934,7 @@ cf.equal.data<-data.frame(date=index(cf.equal.data), coredata(cf.equal.data))
 cf.equal.data<-na.trim(cf.equal.data)
 colnames(cf.equal.data)<-c("date", "MKP_ret", "SMB_ret", "HML_ret", "MKP_res", "SMB_res", "HML_res")
 head(cf.equal.data)
-#---
+#--------------------
 p1<-plot_ly(data=cf.equal.data, x=~date, y=~MKP_ret, name='MKP_ret',type = 'scatter', mode='lines') %>%
   add_trace(y=~MKP_res, name='MKP_res', mode = 'lines+markers') %>% 
   layout(xaxis = list(title = "year"), yaxis = list(title = "MKP"))
@@ -1957,7 +2015,7 @@ path_gp = paste("./output/", "cf_all_dist", sep="")
 ExportPlot(cf.all.dist, path_gp) 
 
 #-------------------------------------------------------------
-#計算Blitz's Table 1 panel A run rolling regression by eq(15)
+# 計算Blitz's Table 1 panel A run rolling regression by eq(15)
 # Residual Reversal model based on Cap Weighting
 #-------------------------------------------------------------
 # create interaction variables with three factors:
@@ -2178,6 +2236,7 @@ print(my.xtable, include.rownames = TRUE,
 # Based on es-sorted portfolios
 #***************************************
 # 1. 針對標準化後的殘差值分組資料進行計算
+# Extract ranking of stocks based on residuals
 quantiles.es = coredata(quantiles.tw$last.e_s$models[[12]])
 dim(quantiles.es)
 quantiles.es[1:40, 1:5]
@@ -2235,8 +2294,6 @@ write.csv(coeff.meds.ret, file="~/git/residual_reversal_201903/output/tables/coe
 #***********************************
 #1. 先分析殘差組之投資組合
 #------------------------------------
-
-
 # looping thru market, size and book
 i=1
 cf.es.q1 = cf.es.qi[[i]]
@@ -2496,8 +2553,6 @@ eq15.ret.Q4<-lm(X1101 ~ mkp+SML+HML+mkp_up+SML_up+HML_up, data=as.data.frame(ret
 summary(eq15.ret.Q4)
 huxreg(eq15.ret.Q4)
 
-
-
 # Newey West standard errors correction for serial correlation
 out<-coeftest(eq15.ret.Q1, vcov=NeweyWest(eq15.ret.Q1, verbose=T))
 huxreg(out)
@@ -2736,7 +2791,9 @@ for (i in 1:n.quantiles){
 #*******************************************************************************
 #將分組名單股票分別寫出檔案: 傳統報酬率ret分組, 輸出10組股票名單的時間數列資料
 # name_stock.ret[[i]], i=1,..., 10
+# Example: names_stock.ret[[1]]: 屬於第一組的股票，在每期（月）的名單
 #*******************************************************************************
+# extract return-based rankings for all stocks in each month
 quantiles.ret = quantiles.tw$one.month$models[[12]]
 temp.ret = NA*coredata(quantiles.ret)
 name_stock.ret<-list()
@@ -2750,11 +2807,12 @@ for (i in 1:n.quantiles){
   }
   colnames(name_stock.ret[[i]])<-NULL
   filename1=paste(i,"q_ret_stocknames.csv",sep="")
-  filename2=paste("~/residual reversal/output/", filename1,sep="")
+  filename2=paste("~/git/residual_reversal_201903/output/", filename1,sep="")
   write.csv(name_stock.ret[[i]], file=filename2)
 }
 
-
+dim(name_stock.ret[[1]])
+name_stock.ret[[1]][37,]
 #******************************************************************
 # Replicate Table 4 in Blitz paper
 # 1.1 每組個股過去36個month報酬率取出，並計算其波動率,先從last.es的分組開始
@@ -2762,7 +2820,7 @@ for (i in 1:n.quantiles){
 # portfolios and are estimated
 # using the 36 months prior to formation date. 
 #******************************************************************
-hist.returns = ROC(data.fa.tw$prices[,tickers.tw.f], type = 'discrete')
+hist.returns = ROC(data.fa.tw$prices[, tickers.tw.f], type = 'discrete')
 head(hist.returns[,1:10],10)
 returns.std = rollapply(data = hist.returns,
                         width = 36,
@@ -2785,9 +2843,7 @@ for (i in 1:n.quantiles){
 # average medians of volatility for 10 portfolios
 options(digits = 4)
 std.meds.avg.es
-write.csv(std.meds.avg.es, file="~/residual reversal/output/std_meds_avg_es.csv")
-
-
+write.csv(std.meds.avg.es, file="~/git/residual_reversal_201903/output/std_meds_avg_es.csv")
 #******************************************************************
 #Replicate Table 4 in Blitz paper
 #1.2 每組個股過去36個報酬率取出，並計算其波動率,再從one.month的分組開始
@@ -2810,7 +2866,7 @@ for (i in 1:n.quantiles){
 }
 std.meds.avg.ret
 #
-write.csv(std.meds.avg.ret, file="~/residual reversal/output/std_meds_avg_ret.csv")
+write.csv(std.meds.avg.ret, file="~/git/residual_reversal_201903/output/std_meds_avg_ret.csv")
 
 #******************************************************************
 # Replicate Table 4 in Blitz paper
@@ -2839,8 +2895,8 @@ for (i in 1:n.quantiles){
 # average medians of market capitalization for 10 portfolios
 cap.meds.avg.es
 cap.mean.avg.es
-write.csv(cap.meds.avg.es, file="~/residual reversal/output/cap_meds_avg_es.csv")
-write.csv(cap.mean.avg.es, file="~/residual reversal/output/cap_mean_avg_es.csv")
+write.csv(cap.meds.avg.es, file="~/git/residual_reversal_201903/output/cap_meds_avg_es.csv")
+write.csv(cap.mean.avg.es, file="~/git/residual_reversal_201903/output/cap_mean_avg_es.csv")
 #******************************************************************
 # Replicate Table 4 in Blitz paper
 # 2.2 每組個股資本市值，並取各組中位數的時間數列平均 based on ret-sorted portfolios
@@ -2868,8 +2924,8 @@ for (i in 1:n.quantiles){
 # average medians of market capitalization for 10 portfolios
 cap.meds.avg.ret
 cap.mean.avg.ret
-write.csv(cap.meds.avg.ret, file="~/residual reversal/output/cap_meds_avg_ret.csv")
-write.csv(cap.mean.avg.ret, file="~/residual reversal/output/cap_mean_avg_ret.csv")
+write.csv(cap.meds.avg.ret, file="~/git/residual_reversal_201903/output/cap_meds_avg_ret.csv")
+write.csv(cap.mean.avg.ret, file="~/git/residual_reversal_201903/output/cap_mean_avg_ret.csv")
 #=====================================================================================
 # Create Blitz paper Table 4 panel 2
 #=====================================================================================
@@ -2890,10 +2946,8 @@ my.xtable<-xtable(x = table4.2,
 my.xtable
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table4_portchar_res.tex',
+      file = '~/git/residual_reversal_201903/output/tables/table4_portchar_res.tex',
       type = 'latex')
-
-
 #=====================================================================================
 # Create Blitz paper Table 4 panel 1 (based on return-sorted portfolios)
 #=====================================================================================
@@ -2914,13 +2968,8 @@ my.xtable<-xtable(x = table4.1,
 my.xtable
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table4_portchar_ret.tex',
+      file = '~/git/residual_reversal_201903/output/tables/table4_portchar_ret.tex',
       type = 'latex')
-
-
-
-
-
 
 #******************************************************************
 names(quantiles.tw)
